@@ -3,9 +3,10 @@ import os
 import joblib
 import json
 import pandas as pd 
+from     pathlib import Path
+from typing import Any, Dict
 
-
-def save_processed_data_to_zip(zip_path, processed_data, printpath = False):
+def save_processed_data_to_zip(zip_path:str | Path, processed_data: Dict[str, Any], printpath: bool = False) -> None:
     """
     Guarda los datos procesados y artefactos en un archivo zip.
     processed_data es el diccionario retornado por process_mpg_data.
@@ -25,18 +26,18 @@ def save_processed_data_to_zip(zip_path, processed_data, printpath = False):
 
     # Crear zip
     with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
-        # Guardar transformadores
-        joblib.dump(artifacts['num_pipe'], 'num_pipe.joblib')
-        zipf.write('num_pipe.joblib')
-        os.remove('num_pipe.joblib')
+        # # Guardar transformadores
+        # joblib.dump(artifacts['num_pipe'], 'num_pipe.joblib')
+        # zipf.write('num_pipe.joblib')
+        # os.remove('num_pipe.joblib')
 
-        joblib.dump(artifacts['cat_preprocessor'], 'cat_preprocessor.joblib')
-        zipf.write('cat_preprocessor.joblib')
-        os.remove('cat_preprocessor.joblib')
+        # joblib.dump(artifacts['cat_preprocessor'], 'cat_preprocessor.joblib')
+        # zipf.write('cat_preprocessor.joblib')
+        # os.remove('cat_preprocessor.joblib')
 
-        joblib.dump(artifacts['feature_names'], 'feature_names.joblib')
-        zipf.write('feature_names.joblib')
-        os.remove('feature_names.joblib')
+        # joblib.dump(artifacts['metadata']['feature_names'], 'feature_names.joblib')
+        # zipf.write('feature_names.joblib')
+        # os.remove('feature_names.joblib')
 
         # Datasets
         train_final.to_csv('train_final.csv', index=False)
@@ -51,6 +52,14 @@ def save_processed_data_to_zip(zip_path, processed_data, printpath = False):
         zipf.write('test_final.csv')
         os.remove('test_final.csv')
 
+
+        # artefactos 
+        
+        joblib.dump(artifacts, 'artifacts.joblib')
+        zipf.write('artifacts.joblib')
+        os.remove('artifacts.joblib')
+        
+        
         # Metadata
         with open('metadata_preprocesamiento.json', 'w') as f:
             json.dump(artifacts['metadata'], f, indent=2)
