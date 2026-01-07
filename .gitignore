@@ -1,0 +1,8 @@
+*excalidraw.*
+*.excalidraw
+*.pdf
+Untitled*
+.obsidian
+.venv
+__pycache__
+resultados.zip
