@@ -1,0 +1,40 @@
+{
+  "n_samples_train": 4436,
+  "n_features": 44,
+  "architecture": [
+    88,
+    44,
+    22,
+    11
+  ],
+  "l2": 8.999999999999999e-05,
+  "dropouts": [
+    0.15,
+    0.1275,
+    0.105,
+    0.0825
+  ],
+  "patience": 15,
+  "min_delta": 0.0001,
+  "max_epochs": 200,
+  "alpha": 0.28150000000000003,
+  "clases_simetricas": false,
+  "clase_positiva_critica": true,
+  "metrica_principal": "F1",
+  "recall_min": 0.8,
+  "metrics_test": {
+    "TP": 297,
+    "FP": 274,
+    "TN": 745,
+    "FN": 71,
+    "accuracy": 0.7512617159336697,
+    "recall": 0.8070652173913043,
+    "f1": 0.6325878594249201
+  },
+  "confusion_matrix_test": {
+    "TN": 745,
+    "FP": 274,
+    "FN": 71,
+    "TP": 297
+  }
+}
