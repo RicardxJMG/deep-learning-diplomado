@@ -284,79 +284,102 @@ class DataProcessor:
 #     return processor.process(csv_path)
 
 
-
-def process_new_data_with_artifacts(new_df: pd.DataFrame, artifacts: Dict[str, Any]) -> pd.DataFrame:
+def process_new_data_with_artifacts(
+    new_df: pd.DataFrame,
+    artifacts: dict
+) -> pd.DataFrame:
     """
-    Procesa nuevos datos usando los artefactos ya entrenados.
-    Retorna el DataFrame procesado listo para predicción.
+    Procesa nuevos datos usando artefactos entrenados.
+    Versión completamente defensiva.
     """
-    
-    num_pipe =  artifacts['num_pipe']
-    cat_preprocessor = artifacts['cat_preprocessor']
-    metadata = artifacts['metadata']
-    
-    
-    feature_names = metadata['feature_names']
-    cols_num = metadata["cols_num"]
-    cols_cat = metadata["cols_cat"]
-    cols_onehot = metadata["cols_onehot"]
-    cat_out_cols = metadata["cat_out_cols"]
-    target = metadata["target"]
 
-    # Si por error viene el target, lo quitamos
-    for possible_target in [target]:
-        if possible_target in new_df.columns:
-            new_df = new_df.drop(columns=[possible_target])
+    # ========= Artefactos =========
+    num_pipe = artifacts.get("num_pipe")
+    cat_preprocessor = artifacts.get("cat_preprocessor")
+    metadata = artifacts["metadata"]
 
-    # Asegurar columnas crudas (faltantes -> NA; extras se ignoran)
-    expected_raw = cols_num + cols_cat
-    for c in expected_raw:
-        if c not in new_df.columns:
-            new_df[c] = pd.NA
-    new_df = new_df[expected_raw]
+    feature_names = metadata["feature_names"]
+    cols_num = metadata.get("cols_num", [])
+    cols_cat = metadata.get("cols_cat", [])
+    cols_onehot = metadata.get("cols_onehot", [])
+    cat_out_cols = metadata.get("cat_out_cols", [])
+    target = metadata.get("target")
 
-    X_new_num = new_df[cols_num]
-    X_new_cat = new_df[cols_cat]
+    new_df = new_df.copy()
 
-    # === Categóricas (mismo encoder, sin re-ajustar) ===
-    X_new_cat_proc = cat_preprocessor.transform(X_new_cat)
+    # ========= Eliminar target =========
+    if target and target in new_df.columns:
+        new_df.drop(columns=[target], inplace=True)
 
-    # reconstruir nombres de salida categórica EXACTOS como en entrenamiento
-    cols_out_cat = list(cat_preprocessor.get_feature_names_out())
+    # ========= Asegurar columnas =========
+    expected_raw_cols = cols_num + cols_cat
+    for col in expected_raw_cols:
+        if col not in new_df.columns:
+            new_df[col] = pd.NA
 
-    rename_map = {}
-    if len(cols_onehot) > 0:
-        ohe = cat_preprocessor.named_transformers_["onehot"].named_steps["encoder"]
-        ohe_names = list(ohe.get_feature_names_out(cols_onehot))
-        for name in ohe_names:
-            for col in cols_onehot:
-                prefix = col + "_"
-                if name.startswith(prefix):
-                    cat = name[len(prefix):]
-                    rename_map[name] = f"{col}___{cat}"
-                    break
+    new_df = new_df[expected_raw_cols]
 
-    cols_out_cat = [rename_map.get(c, c) for c in cols_out_cat]
+    # ========= NUMÉRICAS =========
+    if hasattr(num_pipe, "transform") and len(cols_num) > 0:
+        X_new_num = new_df[cols_num]
+        T_new_num_df = pd.DataFrame(
+            num_pipe.transform(X_new_num),
+            columns=cols_num,
+            index=new_df.index
+        )
+    else:
+        T_new_num_df = pd.DataFrame(index=new_df.index)
 
-    df_new_cat_encode = pd.DataFrame(X_new_cat_proc, columns=cols_out_cat, index=new_df.index)
+    # ========= CATEGÓRICAS =========
+    if hasattr(cat_preprocessor, "transform") and len(cols_cat) > 0:
+        X_new_cat = new_df[cols_cat]
+        X_new_cat_proc = cat_preprocessor.transform(X_new_cat)
 
-    # Alinear a cat_out_cols (si faltan columnas porque no apareció alguna categoría -> 0)
-    for c in cat_out_cols:
-        if c not in df_new_cat_encode.columns:
-            df_new_cat_encode[c] = 0.0
-    df_new_cat_encode = df_new_cat_encode[cat_out_cols]
+        cols_out = list(cat_preprocessor.get_feature_names_out())
 
-    # === Numéricas ===
-    T_new_num = num_pipe.transform(X_new_num)
-    T_new_num_df = pd.DataFrame(T_new_num, columns=cols_num, index=new_df.index)
+        # Renombrado OneHot consistente
+        rename_map = {}
+        if len(cols_onehot) > 0:
+            ohe = (
+                cat_preprocessor
+                .named_transformers_["onehot"]
+                .named_steps["encoder"]
+            )
+            for name in ohe.get_feature_names_out(cols_onehot):
+                for col in cols_onehot:
+                    if name.startswith(col + "_"):
+                        rename_map[name] = f"{col}___{name[len(col)+1:]}"
+                        break
 
-    # === Final (num + cat) ===
-    T_new_final = pd.concat([T_new_num_df, df_new_cat_encode], axis=1)
+        cols_out = [rename_map.get(c, c) for c in cols_out]
 
-    # Forzar el orden final exacto
-    for c in feature_names:
-        if c not in T_new_final.columns:
-            T_new_final[c] = 0.0
+        df_new_cat_encode = pd.DataFrame(
+            X_new_cat_proc,
+            columns=cols_out,
+            index=new_df.index
+        )
+
+        # Alinear a entrenamiento
+        for c in cat_out_cols:
+            if c not in df_new_cat_encode.columns:
+                df_new_cat_encode[c] = 0.0
+
+        df_new_cat_encode = df_new_cat_encode[cat_out_cols]
+
+    else:
+        df_new_cat_encode = pd.DataFrame(index=new_df.index)
+
+    # ========= FINAL =========
+    T_new_final = pd.concat(
+        [T_new_num_df, df_new_cat_encode],
+        axis=1
+    )
+
+    # Forzar orden exacto
+    for col in feature_names:
+        if col not in T_new_final.columns:
+            T_new_final[col] = 0.0
+
     T_new_final = T_new_final[feature_names]
 
     print("Nuevos datos procesados:", T_new_final.shape)
