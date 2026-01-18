@@ -284,10 +284,7 @@ class DataProcessor:
 #     return processor.process(csv_path)
 
 
-def process_new_data_with_artifacts(
-    new_df: pd.DataFrame,
-    artifacts: dict
-) -> pd.DataFrame:
+def process_new_data_with_artifacts(new_df: pd.DataFrame, artifacts: Dict[str, Any]) -> pd.DataFrame:
     """
     Procesa nuevos datos usando artefactos entrenados.
     Versión completamente defensiva.
