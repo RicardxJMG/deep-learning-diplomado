@@ -1,3 +1,6 @@
+Ir al [[Módulo I - DDL - Introducción|temario]] 🔖
+# ¿Cómo funciona el Deep Learning?
+
 Se basa en el funcionamiento de las neurona. Así, las redes neuronales *artificiales* son representaciones matemáticas de las redes neuronales *biológicas*.
 
 ![[Pasted image 20251222024535.png]]

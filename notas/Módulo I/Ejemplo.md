@@ -61,6 +61,3 @@ $$
 Este procedimiento ilustra explícitamente el flujo de una red neuronal estándar mediante transformaciones afines y funciones de activación.
 
 ---
-
-[[04 - Arquitectura general de una red neuronal (Parte I)|Regresar a la nota principal]]
-

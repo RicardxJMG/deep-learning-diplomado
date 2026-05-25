@@ -11,7 +11,8 @@ El temario de este primer módulo consiste de los siguientes temas:
  - [[02 - Cómo Funciona el Deep Learning]]
  - [[03 - Diferencias entre el Machine Learning y Deep Learning]]
  - [[04 - Arquitectura general de una red neuronal (Parte I)]]
- - [[05 - Back Propagation]]
+ - [[05 - Forward Propagation]]
+ - [[06 - Arquitectura general de una red neuronal artificial (Parte II)]]
 
 
 En este primer módulo se realizaron las siguientes tareas:
